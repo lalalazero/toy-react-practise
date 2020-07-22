@@ -23,3 +23,24 @@ export let ToyReact = {
         return element
     }
 }
+
+class ElementWrapper {
+    constructor(type){
+        this.root = document.createElement(type)
+    }
+    mountTo(parent){
+        parent.appendChild(this.root)
+    }
+    appendChild(vdom){
+        vdom.mountTo(this.root)
+    }
+}
+
+class TextWrapper {
+    constructor(text) {
+        this.root = document.createTextNode(text)
+    }
+    mountTo(parent){
+        parent.appendChild(this.root)
+    }
+}
