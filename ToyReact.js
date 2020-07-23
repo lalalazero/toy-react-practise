@@ -52,8 +52,38 @@ export class Component {
         this.children.push(child)
     }
     mountTo(parent) {
+        this.parent = parent
         let vdom = this.render()
-        vdom.mountTo(parent)
+        vdom.mountTo(this.parent)
+    }
+    update(){
+        this.parent.innerHTML = ''
+        let vdom = this.render()
+        vdom.mountTo(this.parent)
+    }
+    setState(state) {
+        if(!this.state && state) {
+            this.state = {}
+        }
+        let merge = (oldState, newState) => {
+            for(let p in newState) {
+                if (typeof newState[p] === 'object' && newState[p] !== null) {
+                    if(typeof oldState[p] !== 'object') {
+                        if(newState[p] instanceof Array) {
+                            oldState[p] = []
+                        }else{
+                            oldState[p] = {}
+                        }
+                    }
+                    merge(oldState[p], newState[p])
+                }else{
+                    oldState[p] = newState[p]
+                }
+            }
+        }
+        merge(this.state, state)
+        console.log('after merge, this.state = ', this.state)
+        this.update()
     }
 }
 

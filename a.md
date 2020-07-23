@@ -16,7 +16,7 @@
 
 `yarn webpack` 运行一下，只要不报错并且页面有出来就行了。
 
-### 2. 添加 `state` , `props` 和事件监听
+### 2. 添加 `props` 和事件监听
 
 - 2.1 `props` 的 `className` 做特殊处理
 
@@ -53,5 +53,48 @@ setAttribute(name, value) {
 }
 ```
 
+### 3. `setState` 和 `mergeState` 和 re-render 
+
+实现 `setState` 函数，首先考虑简单的逻辑：
+1. `setState` 接受一个参数 `newState` 并且合并 `oldState` 然后更新 `this.state` (不考虑接受函数作为参数)
+2. 直接更新 `UI` 重新 `mount` 组件（不考虑 `diff` )
 
 
+```js
+export class Component {
+    /* 省略其他 */
+    mountTo(parent) {
+        this.parent = parent
+        let vdom = this.render()
+        vdom.mountTo(this.parent)
+    }
+    update(){
+        this.parent.innerHTML = '' // 不考虑 diff 直接把原来都删掉，重新 mount
+        let vdom = this.render()
+        vdom.mountTo(this.parent)
+    }
+    setState(state) {
+        if(!this.state && state) {
+            this.state = {}
+        }
+        let merge = (oldState, newState) => {
+            for(let p in newState) {
+                if (typeof newState[p] === 'object' && newState[p] !== null) {
+                    if(typeof oldState[p] !== 'object') {
+                        if(newState[p] instanceof Array) {
+                            oldState[p] = []
+                        }else{
+                            oldState[p] = {}
+                        }
+                    }
+                    merge(oldState[p], newState[p])
+                }else{
+                    oldState[p] = newState[p]
+                }
+            }
+        }
+        merge(this.state, state)
+        console.log('after merge, this.state = ', this.state)
+        this.update()
+    }
+}
