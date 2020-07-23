@@ -62,6 +62,13 @@ class ElementWrapper {
         this.root = document.createElement(type)
     }
     setAttribute(name, value) {
+        if(name === 'className') {
+            name = 'class'
+        }
+        if(name.match(/^on([\s\S]+)$/)) {
+            let eventName = RegExp.$1.toLowerCase()
+            this.root.addEventListener(eventName, value)
+        }
         this.root.setAttribute(name, value)
     }
     mountTo(parent){

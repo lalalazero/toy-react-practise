@@ -1,120 +1,56 @@
 ## 实现拆解
 
-### 自定义组件 children 的处理
+### 1. 搬运 tic-tac-toe 游戏
 
-1. 对 `boolean` `undefined` `null` 等的处理
+源码：https://codepen.io/gaearon/pen/gWWZgR?editors=0100
 
-在 `createElement` 中增加对 `child` 的类型的限制，目前类型只有 `html` 标签类型和自定义组件类型，但是如果 `children` 含有类似这样的节点：
+把 js 的部分拷贝过来放到 main.js 中。
 
-```jsx
-render(){
-    return (
-        <div>
-            {
-                true
-            }
-            {
-                false
-            }
-            {
-                undefined
-            }
-            {
-                null
-            }
-        </div>
-    )
-}
-```
-那么直接调用 `element.appendChild(vdom)` 会调用 `vdom.mountTo()` 方法，这里的 `vdom` 不是一个 `wrapper` 对象，而是原来的类型 `true` `undefined` `null` ，所以 `mountTo` 不存在而报错。
-简单起见可以直接将另外的类型都强转为 `String` 类型，然后再包装为一个 `TextWrapper` 对象。
+把 css 的部分直接贴到 index.html 文件中，用 style 标签包裹。
+
+需要注意的地方：
+
+1. render 的节点是 document.body ，因为 index.html 里面没加 root div （或者加上也可以）
+`ReactDOM.render(<Game />, document.body>`
+2. 把 function 组件改成 class 组件（别忘了加 this )，再把 React 改成 ToyReact。ReactDOM 也改成 ToyReact 
+
+`yarn webpack` 运行一下，只要不报错并且页面有出来就行了。
+
+### 2. 添加 `state` , `props` 和事件监听
+
+- 2.1 `props` 的 `className` 做特殊处理
+
+观察界面会发现样式丢了，检查 `dom` 元素发现是 `classname` 不对，所以这里要对 `setAttribute` 方法进行修改
+
+![image](https://user-images.githubusercontent.com/20458239/88255101-0b2af680-ccea-11ea-8adb-78877082bf1c.png)
+
 ```js
-// createElement 
-for(let child of children) {
-    if(!(child instanceof Component) && !(child instanceof ElementWrapper) && !(child instanceof TextWrapper)) { // 强转为 String
-        child = String(child)
+setAttribute(name, value) {
+    if(name === 'className') {
+        name = 'class'
     }
-    if(typeof child === 'string') {
-        let textNode = new TextWrapper(child)
-        element.appendChild(textNode)
-    }else{
-        element.appendChild(child)
-    }
+    this.root.setAttribute(name, value)
 }
-        
 ```
-也可以参照 `React` 的处理，过滤了 `null` `undefined` `true` `false` 这些值。
+改了之后重新打包样式就出来了
+
+![image](https://user-images.githubusercontent.com/20458239/88255578-48dc4f00-cceb-11ea-9e28-d259bd565780.png)
+
+- 2.2 添加事件监听函数
+
+点击棋盘没有反应，因为目前还没有处理事件监听。这里要把 `onClick` 转变为 `onclick` 并且绑定到真实的 `dom` 元素上去。同样的还是修改 `setAttribute` 函数。由于还没实现 `setState` 函数，事件监听函数可以简单用 `console.log()` 测试
+
 ```js
-for(let child of children) {
-    if(child === null || child === void 0 || typeof child === 'boolean') { // 过滤这些值
-        continue
+setAttribute(name, value) {
+    if(name === 'className') {
+        name = 'class'
     }
-    if(!(child instanceof Component) && !(child instanceof ElementWrapper) && !(child instanceof TextWrapper)) { // 强转 String
-        child = String(child)
+    if(name.match(/^on([\s\S]+)$/)) { // 匹配 on 开头的任意字符 [\s\S] 匹配任意字符 () 作为一个组 
+        let eventName = RegExp.$1.toLowerCase() 
+        this.root.addEventListener(eventName, value)
     }
-    if(typeof child === 'string') {
-        let textNode = new TextWrapper(child)
-        element.appendChild(textNode)
-    }else {
-        element.appendChild(child)
-    }
+    this.root.setAttribute(name, value)
 }
-```
-
-2. 如果 `children` 里面还有 `children` 
-
-```jsx
-render() {
-    return (
-        <div>
-            {
-                [1,2,3].map(i => <p>p - {i}</p>)
-            }
-        </div>
-    )
-}
-```
-
-需要单独判断 `child` 的类型是不是 `Array` ，然后递归处理
-```js
-createElement(type, attributes, ...children){
-    let element = null
-    if(typeof type === 'string') {
-        element = new ElementWrapper(type)
-    } else {
-        element = new type;
-    }
-    
-    for(let name in attributes) {
-        element.setAttribute(name, attributes[name])
-    }
-    // 处理 children
-    let insertChildren = (children) => {
-        for(let child of children) {
-            if(typeof child === 'object' && child instanceof Array) {
-                // 如果是数组继续递归处理
-                insertChildren(child)
-            }else{
-                if(!child || typeof child === 'boolean') {
-                    continue
-                }
-                if(!(child instanceof Component) && !(child instanceof ElementWrapper) && !(child instanceof TextWrapper)) {
-                    child = String(child)
-                }
-                if(typeof child === 'string') {
-                    let textNode = new TextWrapper(child)
-                    element.appendChild(textNode)
-                }else {
-                    element.appendChild(child)
-                }
-            }
-            
-        }
-    }
-    
-    insertChildren(children)
-    return element
-},
 ```
 
 
