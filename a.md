@@ -98,3 +98,6 @@ export class Component {
         this.update()
     }
 }
+
+
+### 4. 用 range 改写

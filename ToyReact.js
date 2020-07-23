@@ -36,7 +36,15 @@ export let ToyReact = {
         return element
     },
     render(vdom, mountNode){
-        vdom.mountTo(mountNode)
+        let range = document.createRange()
+        if(mountNode.children.length) {
+            range.setStartAfter(mountNode.lastChild)
+            range.setEndAfter(mountNode.lastChild)
+        }else{
+            range.setStart(mountNode, 0)
+            range.setEnd(mountNode, 0)
+        }
+        vdom.mountTo(range)
     }
 }
 
@@ -51,15 +59,14 @@ export class Component {
     appendChild(child) {
         this.children.push(child)
     }
-    mountTo(parent) {
-        this.parent = parent
-        let vdom = this.render()
-        vdom.mountTo(this.parent)
+    mountTo(range) {
+        this.range = range
+        this.update()
     }
     update(){
-        this.parent.innerHTML = ''
+        this.range.deleteContents()
         let vdom = this.render()
-        vdom.mountTo(this.parent)
+        vdom.mountTo(this.range)
     }
     setState(state) {
         if(!this.state && state) {
@@ -101,11 +108,20 @@ class ElementWrapper {
         }
         this.root.setAttribute(name, value)
     }
-    mountTo(parent){
-        parent.appendChild(this.root)
+    mountTo(range){
+        range.deleteContents()
+        range.insertNode(this.root)
     }
     appendChild(vdom){
-        vdom.mountTo(this.root)
+        let range = document.createRange()
+        if(this.root.children.length) {
+            range.setStartAfter(this.root.lastChild)
+            range.setEndAfter(this.root.lastChild)
+        }else{
+            range.setStart(this.root, 0)
+            range.setEnd(this.root, 0)
+        }
+        vdom.mountTo(range)
     }
 }
 
@@ -113,7 +129,8 @@ class TextWrapper {
     constructor(text) {
         this.root = document.createTextNode(text)
     }
-    mountTo(parent){
-        parent.appendChild(this.root)
+    mountTo(range){
+        range.deleteContents()
+        range.insertNode(this.root)
     }
 }
