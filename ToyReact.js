@@ -16,6 +16,7 @@ export let ToyReact = {
                     insertChildren(child)
                 }else{
                     if(!child || typeof child === 'boolean') {
+                        // child = ''
                         continue
                     }
                     if(!(child instanceof Component) && !(child instanceof ElementWrapper) && !(child instanceof TextWrapper)) {
@@ -70,9 +71,20 @@ export class Component {
         this.update()
     }
     update(){
-        this.range.deleteContents()
-        let vdom = this.render().vdom
-        vdom.mountTo(this.range)
+        let vdom = this.vdom 
+        if(this.oldVdom) {
+            if(isSameTree(vdom, this.oldVdom)) {
+                return
+            }
+            if(!isSameNode(vdom, this.oldVdom)) {
+                vdom.mountTo(this.oldVdom.range)
+            } else {
+                replace(vdom, this.oldVdom)
+            }
+        }else{
+            vdom.mountTo(this.range)
+        }
+        this.oldVdom = vdom
     }
     setState(state) {
         if(!this.state && state) {
@@ -113,6 +125,7 @@ class ElementWrapper {
         this.props[name] = value
     }
     mountTo(range){
+        this.range = range
         range.deleteContents()
         let element = this.buildRealDom()
         range.insertNode(element)
@@ -159,8 +172,78 @@ class TextWrapper {
         return this;
     }
     mountTo(range){
+        this.range = range
         range.deleteContents()
         let element = document.createTextNode(this.text)
         range.insertNode(element)
+    }
+}
+
+function isSameTree(node1, node2) {
+    if(!isSameNode(node1, node2)) {
+        return false
+    }
+
+    if(node1.children.length !== node2.children.length) {
+        return false
+    }
+    for(let i = 0 ; i < node1.children.length; i++) {
+        if(!isSameTree(node1.children[i], node2.children[i])) {
+            return false
+        }
+    }
+
+    return true
+}
+
+function isSameNode(node1, node2) {
+    if(node1.type !== node2.type) {
+        return false
+    }
+
+    if(Object.keys(node1.props).length !== Object.keys(node2.props).length) {
+        return false
+    }
+
+    for(let name in node1.props) {
+        if (typeof node1.props[name] === 'function'
+            && typeof node2.props[name] === 'function'
+            && node1.props[name].toString() === node2.props[name].toString()) {
+            continue
+        }
+
+        if (typeof node1.props[name] === 'object'
+            && typeof node2.props[name] === 'object'
+            && JSON.stringify(node1.props[name]) === JSON.stringify(node2.props[name])) {
+            continue
+        }
+
+
+        if (node1.props[name] !== node2.props[name]) {
+            return false
+        }
+    }
+
+    return true
+}
+
+function replace(newTree, oldTree) {
+    // if(isSameTree(newTree, oldTree)) {
+    //     return
+    // }
+    if(!isSameNode(newTree, oldTree)) {
+        newTree.mountTo(oldTree.range)
+    }else{
+        for(let i = 0; i < newTree.children.length; i++) {
+            if(newTree.children[i].type === '#text') {
+                debugger
+            }
+            if(!oldTree.children[i]) {
+                newTree.mountTo(oldTree.range)
+            }else{
+                replace(newTree.children[i], oldTree.children[i])
+            }
+            
+        }
     }
 }
