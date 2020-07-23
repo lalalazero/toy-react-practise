@@ -1,6 +1,5 @@
 export let ToyReact = {
     createElement(type, attributes, ...children){
-        console.log('createElement 执行， type', type)
         let element = null
         if(typeof type === 'string') {
             element = new ElementWrapper(type)
@@ -11,19 +10,32 @@ export let ToyReact = {
         for(let name in attributes) {
             element.setAttribute(name, attributes[name])
         }
-        for(let child of children) {
-            if(typeof child === 'string') {
-                let textNode = new TextWrapper(child)
-                element.appendChild(textNode)
-            }else{
-                element.appendChild(child)
+        let insertChildren = (children) => {
+            for(let child of children) {
+                if(typeof child === 'object' && child instanceof Array) {
+                    insertChildren(child)
+                }else{
+                    if(!child || typeof child === 'boolean') {
+                        continue
+                    }
+                    if(!(child instanceof Component) && !(child instanceof ElementWrapper) && !(child instanceof TextWrapper)) {
+                        child = String(child)
+                    }
+                    if(typeof child === 'string') {
+                        let textNode = new TextWrapper(child)
+                        element.appendChild(textNode)
+                    }else {
+                        element.appendChild(child)
+                    }
+                }
+                
             }
         }
         
+        insertChildren(children)
         return element
     },
     render(vdom, mountNode){
-        console.log('ToyReact.render()...')
         vdom.mountTo(mountNode)
     }
 }
@@ -40,12 +52,8 @@ export class Component {
         this.children.push(child)
     }
     mountTo(parent) {
-        console.log('mountTo 执行，调用 this.render 方法')
         let vdom = this.render()
-        console.log('实dom ', vdom)
-        console.log('挂载到页面上...')
         vdom.mountTo(parent)
-        // parent.appendChild(dom)
     }
 }
 
@@ -57,7 +65,6 @@ class ElementWrapper {
         this.root.setAttribute(name, value)
     }
     mountTo(parent){
-        console.log('element 挂载到页面上')
         parent.appendChild(this.root)
     }
     appendChild(vdom){
@@ -70,7 +77,6 @@ class TextWrapper {
         this.root = document.createTextNode(text)
     }
     mountTo(parent){
-        console.log('text挂载到页面上')
         parent.appendChild(this.root)
     }
 }
