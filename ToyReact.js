@@ -53,6 +53,12 @@ export class Component {
         this.children = []
         this.props = Object.create(null)
     }
+    get type() {
+        return this.constructor.name
+    }
+    get vdom() {
+        return this.render().vdom
+    }
     setAttribute(name, value) {
         this.props[name] = value
     }
@@ -65,7 +71,7 @@ export class Component {
     }
     update(){
         this.range.deleteContents()
-        let vdom = this.render()
+        let vdom = this.render().vdom
         vdom.mountTo(this.range)
     }
     setState(state) {
@@ -96,41 +102,65 @@ export class Component {
 
 class ElementWrapper {
     constructor(type){
-        this.root = document.createElement(type)
+        this.type = type 
+        this.children = []
+        this.props = Object.create(null)
+    }
+    get vdom(){
+        return this;
     }
     setAttribute(name, value) {
-        if(name === 'className') {
-            name = 'class'
-        }
-        if(name.match(/^on([\s\S]+)$/)) {
-            let eventName = RegExp.$1.toLowerCase()
-            this.root.addEventListener(eventName, value)
-        }
-        this.root.setAttribute(name, value)
+        this.props[name] = value
     }
     mountTo(range){
         range.deleteContents()
-        range.insertNode(this.root)
+        let element = this.buildRealDom()
+        range.insertNode(element)
     }
-    appendChild(vdom){
-        let range = document.createRange()
-        if(this.root.children.length) {
-            range.setStartAfter(this.root.lastChild)
-            range.setEndAfter(this.root.lastChild)
-        }else{
-            range.setStart(this.root, 0)
-            range.setEnd(this.root, 0)
+    buildRealDom(){
+        let element = document.createElement(this.type)
+        for(let name in this.props) {
+            let value = this.props[name]
+            if(name === 'className') {
+                name = 'class'
+            }
+            if(name.match(/^on([\s\S]+)$/)) {
+                let eventName = RegExp.$1.toLowerCase()
+                element.addEventListener(eventName, value)
+            }
+            element.setAttribute(name, value)
         }
-        vdom.mountTo(range)
+        for(let child of this.children) {
+            let range = document.createRange()
+            if(element.children.length) {
+                range.setStartAfter(element.lastChild)
+                range.setEndAfter(element.lastChild)
+            }else{
+                range.setStart(element, 0)
+                range.setEnd(element, 0)
+            }
+            child.mountTo(range)
+        }
+        return element
+    }
+    appendChild(vchild){
+        this.children.push(vchild.vdom)
     }
 }
 
 class TextWrapper {
     constructor(text) {
-        this.root = document.createTextNode(text)
+        this.type = '#text'
+        this.props = Object.create(null)
+        this.text = text
+        this.children = []
+    }
+    get vdom() {
+        return this;
     }
     mountTo(range){
         range.deleteContents()
-        range.insertNode(this.root)
+        let element = document.createTextNode(this.text)
+        range.insertNode(element)
     }
 }
