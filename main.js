@@ -108,7 +108,7 @@ class Square extends Component {
       } else {
         status = "Next player: " + (this.state.xIsNext ? "X" : "O");
       }
-  
+      console.log('render...', status)
       return (
         <div className="game">
           <div className="game-board">
@@ -116,6 +116,11 @@ class Square extends Component {
               squares={current.squares}
               onClick={i => this.handleClick(i)}
             />
+          </div>
+          <div className="game-info">
+          { status }
+            
+            
           </div>
           
         </div>

@@ -19,8 +19,8 @@ export let ToyReact = {
                     insertChildren(child)
                 }else{
                     if(!child || typeof child === 'boolean') {
-                        child = ''
-                        // continue
+                        // child = ''
+                        continue
                     }
                     if(!(child instanceof Component) && !(child instanceof ElementWrapper) && !(child instanceof TextWrapper)) {
                         child = String(child)
