@@ -1,4 +1,5 @@
-const { ToyReact, Component } = require("./ToyReact");
+import { ToyReact } from './ToyReact'
+import { Component } from './Component'
 
 class Square extends Component {
     render(){
@@ -116,10 +117,7 @@ class Square extends Component {
               onClick={i => this.handleClick(i)}
             />
           </div>
-          <div className="game-info">
-            <div>{status}</div>
-            <ol>{moves}</ol>
-          </div>
+          
         </div>
       );
     }
